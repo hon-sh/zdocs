@@ -80,7 +80,7 @@ pub fn main() !void {
                     }
                     fatal("-Mstd need zig installed, you can use -Mstd=<path-to-std/std.zig> instead", .{});
                 }
-                fatal("expected module root_src_path after -M{d}", .{mod_name});
+                fatal("expected module root_src_path after -M{s}", .{mod_name});
             };
         } else if (mem.eql(u8, arg, "--open-browser")) {
             force_open_browser = true;
