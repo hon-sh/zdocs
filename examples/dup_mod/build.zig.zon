@@ -1,0 +1,8 @@
+.{
+    .name = .dup_mod,
+    .version = "0.0.0",
+    .fingerprint = 0x3b735e9b9f2031d5,
+    .minimum_zig_version = "0.14.1",
+    .dependencies = .{},
+    .paths = .{""},
+}
