@@ -2,15 +2,15 @@
 
 zdocs is like `zig std`, but for all modules.
 
-## examples
+## usage
 
-std
+show docs of std
 
 ```bash
 zdocs -Mstd
 ```
 
-module
+show docs of specific module
 
 ```bash
 zdocs -Mmarkdown=src/wasm/markdown.zig
