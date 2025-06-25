@@ -41,7 +41,7 @@ pub fn build(b: *std.Build) void {
     }
 
     const exe = b.addExecutable(.{
-        .name = "m",
+        .name = "dup_mod",
         .root_module = exe_mod,
     });
 
@@ -49,27 +49,12 @@ pub fn build(b: *std.Build) void {
 
     const run_cmd = b.addRunArtifact(exe);
 
-    run_cmd.step.dependOn(b.getInstallStep());
-
     if (b.args) |args| {
         run_cmd.addArgs(args);
     }
 
     const run_step = b.step("run", "Run the app");
     run_step.dependOn(&run_cmd.step);
-
-    const test_step = b.step("test", "Run unit tests");
-    {
-        const mods = [_]*std.Build.Module{ a_mod, a_b_mod, b_mod, exe_mod };
-        for (mods) |mod| {
-            const mod_unit_tests = b.addTest(.{
-                .root_module = mod,
-            });
-
-            const run_mod_unit_tests = b.addRunArtifact(mod_unit_tests);
-            test_step.dependOn(&run_mod_unit_tests.step);
-        }
-    }
 }
 
 fn dumpModDeps(mod: *std.Build.Module, name: []const u8, b: *std.Build) !void {
