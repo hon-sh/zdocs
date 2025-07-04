@@ -11,6 +11,10 @@ const Oom = error{OutOfMemory};
 /// Delete this to find out where URL escaping needs to be added.
 pub const missing_feature_url_escape = true;
 
+const root = @import("root");
+
+const docLinkPrefix = if (@hasDecl(root, "doc_options")) root.doc_options.docLinkBase else "#";
+
 pub const RenderSourceOptions = struct {
     skip_doc_comments: bool = false,
     skip_comments: bool = false,
@@ -186,7 +190,7 @@ pub fn fileSourceHtml(
                     const fn_link = options.fn_link.get();
                     const fn_token = main_tokens[fn_link.ast_node];
                     if (token_index == fn_token + 1) {
-                        try out.appendSlice(gpa, "<a class=\"tok-fn\" href=\"#");
+                        try out.appendSlice(gpa, "<a class=\"tok-fn\" href=\"" ++ docLinkPrefix);
                         _ = missing_feature_url_escape;
                         try fn_link.fqn(out);
                         try out.appendSlice(gpa, "\">");
@@ -221,7 +225,7 @@ pub fn fileSourceHtml(
                     g.field_access_buffer.clearRetainingCapacity();
                     try walkFieldAccesses(file_index, &g.field_access_buffer, field_access_node);
                     if (g.field_access_buffer.items.len > 0) {
-                        try out.appendSlice(gpa, "<a href=\"#");
+                        try out.appendSlice(gpa, "<a href=\"" ++ docLinkPrefix);
                         _ = missing_feature_url_escape;
                         try out.appendSlice(gpa, g.field_access_buffer.items);
                         try out.appendSlice(gpa, "\">");
@@ -237,7 +241,7 @@ pub fn fileSourceHtml(
                     g.field_access_buffer.clearRetainingCapacity();
                     try resolveIdentLink(file_index, &g.field_access_buffer, token_index);
                     if (g.field_access_buffer.items.len > 0) {
-                        try out.appendSlice(gpa, "<a href=\"#");
+                        try out.appendSlice(gpa, "<a href=\"" ++ docLinkPrefix);
                         _ = missing_feature_url_escape;
                         try out.appendSlice(gpa, g.field_access_buffer.items);
                         try out.appendSlice(gpa, "\">");
