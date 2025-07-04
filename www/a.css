@@ -1,0 +1,339 @@
+.pre-body-tmp {
+  white-space: pre;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+body {
+  font-family: system-ui, -apple-system, Roboto, "Segoe UI", sans-serif;
+  color: #000000;
+}
+.hidden {
+  display: none;
+}
+table {
+  width: 100%;
+}
+a {
+  color: #2a6286;
+}
+pre {
+  font-family: "Source Code Pro", monospace;
+  font-size: 1em;
+  background-color: #f5f5f5;
+  padding: 1em;
+  margin: 0;
+  overflow-x: auto;
+}
+:not(pre) > code {
+  white-space: break-spaces;
+}
+code {
+  font-family: "Source Code Pro", monospace;
+  font-size: 0.9em;
+}
+code a {
+  color: #000000;
+}
+#listFields > div,
+#listParams > div {
+  margin-bottom: 1em;
+}
+#hdrName a {
+  font-size: 0.7em;
+  padding-left: 1em;
+}
+.fieldDocs {
+  border: 1px solid #f5f5f5;
+  border-top: 0px;
+  padding: 1px 1em;
+}
+
+#logo {
+  width: 8em;
+  padding: 0.5em 1em;
+}
+
+#navWrap {
+  width: -moz-available;
+  width: -webkit-fill-available;
+  width: stretch;
+  margin-left: 11em;
+}
+
+#search {
+  width: 100%;
+}
+
+nav {
+  width: 10em;
+  float: left;
+}
+nav h2 {
+  font-size: 1.2em;
+  text-decoration: underline;
+  margin: 0;
+  padding: 0.5em 0;
+  text-align: center;
+}
+nav p {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+}
+section {
+  clear: both;
+  padding-top: 1em;
+}
+section h1 {
+  border-bottom: 1px dashed;
+  margin: 0 0;
+}
+section h2 {
+  font-size: 1.3em;
+  margin: 0.5em 0;
+  padding: 0;
+  border-bottom: 1px solid;
+}
+#listNav {
+  list-style-type: none;
+  margin: 0.5em 0 0 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: #f1f1f1;
+}
+#listNav li {
+  float: left;
+  position: relative;
+}
+#listNav li:not(:first-child) {
+  padding-left: 3px;
+}
+#listNav li:not(:first-child)::before {
+  content: ".";
+  position: absolute;
+  top: 8px;
+  left: -1px;
+  z-index: 1;
+}
+#listNav li a {
+  display: block;
+  color: #000;
+  text-align: center;
+  padding: 0.5em 0.8em;
+  text-decoration: none;
+  position: relative;
+  z-index: 0;
+}
+#listNav li a::before {
+  content: "";
+  display: block;
+  position: absolute;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+  transform: skewX(-10deg);
+}
+#listNav li a:hover {
+  color: #fff;
+}
+#listNav li a:hover::before {
+  background-color: #555;
+}
+#listNav li a.active {
+  color: #000;
+}
+#listNav li a.active::before {
+  background-color: #ffbb4d;
+}
+
+#helpDialog {
+  width: 21em;
+  height: 21em;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: #333;
+  color: #fff;
+  border: 1px solid #fff;
+}
+#helpDialog h1 {
+  text-align: center;
+  font-size: 1.5em;
+}
+#helpDialog dt,
+#helpDialog dd {
+  display: inline;
+  margin: 0 0.2em;
+}
+kbd {
+  color: #000;
+  background-color: #fafbfc;
+  border-color: #d1d5da;
+  border-bottom-color: #c6cbd1;
+  box-shadow-color: #c6cbd1;
+  display: inline-block;
+  padding: 0.3em 0.2em;
+  font: 1.2em monospace;
+  line-height: 0.8em;
+  vertical-align: middle;
+  border: solid 1px;
+  border-radius: 3px;
+  box-shadow: inset 0 -1px 0;
+  cursor: default;
+}
+
+#errors {
+  background-color: #faa;
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  max-height: min(20em, 50vh);
+  padding: 0.5em;
+  overflow: auto;
+}
+#errors h1 {
+  font-size: 1.5em;
+}
+#errors pre {
+  background-color: #fcc;
+}
+
+#listSearchResults li.selected {
+  background-color: #93e196;
+}
+
+#tableFnErrors dt {
+  font-weight: bold;
+}
+
+dl > div {
+  padding: 0.5em;
+  border: 1px solid #c0c0c0;
+  margin-top: 0.5em;
+}
+
+td,
+th {
+  text-align: unset;
+  vertical-align: top;
+  margin: 0;
+  padding: 0.5em;
+  max-width: 20em;
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+}
+
+ul.columns {
+  column-width: 20em;
+}
+
+.tok-kw {
+  color: #333;
+  font-weight: bold;
+}
+.tok-str {
+  color: #d14;
+}
+.tok-builtin {
+  color: #0086b3;
+}
+.tok-comment {
+  color: #777;
+  font-style: italic;
+}
+.tok-fn {
+  color: #900;
+  font-weight: bold;
+}
+.tok-null {
+  color: #008080;
+}
+.tok-number {
+  color: #008080;
+}
+.tok-type {
+  color: #458;
+  font-weight: bold;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #111;
+    color: #bbb;
+  }
+  pre {
+    background-color: #222;
+    color: #ccc;
+  }
+  a {
+    color: #88f;
+  }
+  code a {
+    color: #ccc;
+  }
+  .fieldDocs {
+    border-color: #2a2a2a;
+  }
+  #listNav {
+    background-color: #333;
+  }
+  #listNav li a {
+    color: #fff;
+  }
+  #listNav li a:hover {
+    background-color: #555;
+    color: #fff;
+  }
+  #listNav li a.active {
+    background-color: #ffbb4d;
+    color: #000;
+  }
+  #listSearchResults li.selected {
+    background-color: #000;
+  }
+  #listSearchResults li.selected a {
+    color: #fff;
+  }
+  #errors {
+    background-color: #800;
+    color: #fff;
+  }
+  #errors pre {
+    background-color: #a00;
+    color: #fff;
+  }
+  dl > div {
+    border-color: #373737;
+  }
+  .tok-kw {
+    color: #eee;
+  }
+  .tok-str {
+    color: #2e5;
+  }
+  .tok-builtin {
+    color: #ff894c;
+  }
+  .tok-comment {
+    color: #aa7;
+  }
+  .tok-fn {
+    color: #b1a0f8;
+  }
+  .tok-null {
+    color: #ff8080;
+  }
+  .tok-number {
+    color: #ff8080;
+  }
+  .tok-type {
+    color: #68f;
+  }
+}
