@@ -49,8 +49,8 @@ fn add_update_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode) !void {
     wasm.rdynamic = true;
 
     const copy_wasm = b.addUpdateSourceFiles();
-    copy_wasm.addCopyFileToSource(wasm.getEmittedBin(), "docs/main.wasm");
+    copy_wasm.addCopyFileToSource(wasm.getEmittedBin(), "src/docs/main.wasm");
 
-    const update_wasm_step = b.step("update-wasm", "update docs/main.wasm");
+    const update_wasm_step = b.step("update-wasm", "update src/docs/main.wasm");
     update_wasm_step.dependOn(&copy_wasm.step);
 }
