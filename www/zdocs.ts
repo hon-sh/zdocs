@@ -53,6 +53,18 @@ export class Zdoc {
     this.getModuleList();
   }
 
+  byDeclIndexName = (a, b) => {
+    const a_name = this.declIndexName(a);
+    const b_name = this.declIndexName(b);
+    return operatorCompare(a_name, b_name);
+  };
+
+  byDeclIndexName2 = (a, b) => {
+    const a_name = this.declIndexName(a.original);
+    const b_name = this.declIndexName(b.original);
+    return operatorCompare(a_name, b_name);
+  };
+
   decodeString(ptr, len) {
     if (len === 0) return "";
     return text_decoder.decode(
@@ -64,6 +76,10 @@ export class Zdoc {
     const ptr = Number(bigint & 0xffffffffn);
     const len = Number(bigint >> 32n);
     return this.decodeString(ptr, len);
+  }
+
+  declFields(decl_index) {
+    return this.unwrapSlice32(this.#api.decl_fields(decl_index));
   }
 
   namespaceMembers(decl_index, include_private) {
@@ -98,11 +114,13 @@ export class Zdoc {
   }
 
   navLinkFqn(full_name) {
-    return "#" + full_name;
+    // TODO: check mod_name
+    return full_name;
   }
   navLinkDeclIndex(decl_index) {
     return this.navLinkFqn(this.fullyQualifiedName(decl_index));
   }
+  /** -> std.http.Client */
   fullyQualifiedName(decl_index) {
     return this.unwrapString(this.#api.decl_fqn(decl_index));
   }
@@ -182,10 +200,83 @@ export class Zdoc {
         throw new Error("unrecognized category " + category);
     }
   }
+  resolveAliasee(decl_index) {
+    let idx = decl_index;
+    let c = 0;
+    while (CAT_alias == this.#api.categorize_decl(idx, 0)) {
+      idx = this.#api.get_aliasee();
+
+      if (++c >= 1000) {
+        throw new Error(`resolveAliasee ${decl_index} fail`);
+      }
+    }
+    return idx;
+  }
+
+  renderDeclHeading(decl_index) {
+    const src =
+      "#src/" + this.unwrapString(this.#api.decl_file_path(decl_index));
+
+    const name = this.unwrapString(this.#api.decl_category_name(decl_index));
+    return `<h1 id="hdrName"><span>${esc(
+      name
+    )}</span><a style="cursor: not-allowed" href="${esc(src)}">[src]</a></h1>`;
+  }
+
+  renderNavFancy(cur_nav_decl, list: { name: string; href: string }[]) {
+    {
+      // First, walk backwards the decl parents within a file.
+      let decl_it = cur_nav_decl;
+      let prev_decl_it = null;
+      while (decl_it != null) {
+        list.push({
+          name: this.declIndexName(decl_it),
+          href: this.navLinkDeclIndex(decl_it),
+        });
+        prev_decl_it = decl_it;
+        decl_it = this.declParent(decl_it);
+      }
+
+      // Next, walk backwards the file path segments.
+      if (prev_decl_it != null) {
+        const file_path = this.fullyQualifiedName(prev_decl_it);
+        const parts = file_path.split(".");
+        parts.pop(); // skip last
+        for (;;) {
+          const href = this.navLinkFqn(parts.join("."));
+          const part = parts.pop();
+          if (!part) break;
+          list.push({
+            name: part,
+            href: href,
+          });
+        }
+      }
+
+      list.reverse();
+    }
+
+    const buf = [`<div id="sectNav"><ul id="listNav">`];
+    //
+    // resizeDomList(domListNav, list.length, '');
+
+    for (let i = 0; i < list.length; i += 1) {
+      buf.push(`
+<li><a ${i + 1 == list.length ? ' class="active"' : ""} href="${esc(
+        list[i]!.href
+      )}">${esc(list[i]!.name)}</a></li>
+        `);
+    }
+
+    buf.push(`</ul></div>`);
+
+    return buf.join("");
+  }
 
   renderNamespacePage(decl_index) {
     const members = this.namespaceMembers(decl_index, false).slice();
-    return this.renderNamespace(null, members, null);
+    const fields = this.declFields(decl_index).slice();
+    return this.renderNamespace(decl_index, members, fields);
   }
 
   renderNamespace(base_decl, members, fields) {
@@ -235,84 +326,246 @@ export class Zdoc {
       }
     }
 
-    const obj = {
-      typesList,
-      namespacesList,
-      errSetsList,
-      fnsList,
-      varsList,
-      valsList,
+    typesList.sort(this.byDeclIndexName2);
+    namespacesList.sort(this.byDeclIndexName2);
+    errSetsList.sort(this.byDeclIndexName2);
+    fnsList.sort(this.byDeclIndexName);
+    varsList.sort(this.byDeclIndexName);
+    valsList.sort(this.byDeclIndexName2);
+
+    const _buf = [];
+    const w = {
+      write(b) {
+        _buf.push(b);
+      },
     };
 
-    return Object.entries(obj)
-      .map(([key, items]) => {
-        if (key == "valsList") {
-          const buf = [key, "\n"];
+    /*
+    fnProto
+    tldDocs
+    sectParams
+      listParams
+    sectFnErrors
+      fnErrorsAnyError
+      tableFnErrors
+        listFnErrors
+    sectSearchResults
+    sectFields
+      xx
+      listFields
+    sectTypes
+      listTypes
 
-          for (let i = 0; i < valsList.length; i += 1) {
-            const original_decl = valsList[i].original;
-            const decl = valsList[i].member;
-            //   tdNameA.setAttribute('href', navLinkDeclIndex(decl));
-            buf.push(`
-            ${this.declIndexName(original_decl)} - ${this.declTypeHtml(decl)}
-            ${this.declDocsHtmlShort(decl)}
-            `);
-          }
+    <div id="fnProto" class="hidden">
+      <pre><code id="fnProtoCode"></code></pre>
+    </div>
+    <div id="tldDocs" class="hidden"></div>
+    <div id="sectParams" class="hidden">
+      <h2>Parameters</h2>
+      <div id="listParams">
+      </div>
+    </div>
+    <div id="sectFnErrors" class="hidden">
+      <h2>Errors</h2>
+      <div id="fnErrorsAnyError">
+        <p><span class="tok-type">anyerror</span> means the error set is known only at runtime.</p>
+      </div>
+      <div id="tableFnErrors"><dl id="listFnErrors"></dl></div>
+    </div>
+    <div id="sectSearchResults" class="hidden">
+      <h2>Search Results</h2>
+      <ul id="listSearchResults"></ul>
+    </div>
+    <div id="sectSearchNoResults" class="hidden">
+      <h2>No Results Found</h2>
+      <p>Press escape to exit search and then '?' to see more options.</p>
+    </div>
+    <div id="sectDocTests" class="hidden">
+      <h2>Example Usage</h2>
+      <pre><code id="docTestsCode"></code></pre>
+    </div>
+    <div id="sectSource" class="hidden">
+      <h2>Source Code</h2>
+      <pre><code id="sourceText"></code></pre>
+    </div>
+    </section>
 
-          return buf.join("");
-        }
+    <div id="errors" class="hidden">
+      <h1>Errors</h1>
+      <pre id="errorsText"></pre>
+    </div>
+    */
 
-        if (key == "fnsList") {
-          const buf = [key, "\n"];
+    if (fields.length !== 0) {
+      w.write(`
+    <div id="sectFields">
+      <h2>Fields</h2>
+      <div id="listFields">
+        `);
 
-          for (let i = 0; i < fnsList.length; i += 1) {
-            const decl = fnsList[i];
-
-            buf.push(`
-            ${this.fnProtoHtml(decl, true)}
-            ${this.declDocsHtmlShort(decl)}
+      for (let i = 0; i < fields.length; i += 1) {
+        w.write(`
+          <div>
+          ${this.unwrapString(this.#api.decl_field_html(base_decl, fields[i]))}
+          </div>
           `);
-          }
+      }
 
-          return buf.join("");
-        }
+      w.write(`
+      </div>
+    </div>
+        `);
+    }
 
-        if (key == "typesList") {
-          const buf = [key, "\n"];
+    if (typesList.length > 0) {
+      w.write(`<div id="sectTypes">
+      <h2>Types</h2>
+      <ul id="listTypes" class="columns">`);
 
-          for (let i = 0; i < typesList.length; i += 1) {
-            const original_decl = typesList[i].original;
-            const decl = typesList[i].member;
-            buf.push(
-              `${this.declIndexName(original_decl)} (${this.navLinkDeclIndex(
-                decl
-              )})
+      for (let i = 0; i < typesList.length; i += 1) {
+        const original_decl = typesList[i].original;
+        const decl = typesList[i].member;
+        w.write(
+          `<li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+            this.declIndexName(original_decl)
+          )}</a></li>
 `
-            );
-          }
+        );
+      }
 
-          return buf.join("");
-        }
+      w.write(`</ul>
+    </div>`);
+    }
 
-        if (key == "namespacesList") {
-          const buf = [key, "\n"];
-          for (let i = 0; i < namespacesList.length; i += 1) {
-            const original_decl = namespacesList[i].original;
-            const decl = namespacesList[i].member;
-            buf.push(
-              `${this.declIndexName(original_decl)} (${this.navLinkDeclIndex(
-                decl
-              )})
+    if (namespacesList.length > 0) {
+      w.write(`
+    <div id="sectNamespaces">
+      <h2>Namespaces</h2>
+      <ul id="listNamespaces" class="columns">
+      
+        `);
+
+      for (let i = 0; i < namespacesList.length; i += 1) {
+        const original_decl = namespacesList[i].original;
+        const decl = namespacesList[i].member;
+
+        w.write(
+          `<li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+            this.declIndexName(original_decl)
+          )}</a></li>
 `
-            );
-          }
+        );
+      }
 
-          return buf.join("");
-        }
+      w.write(`
+</ul>
+    </div>
+        `);
+    }
 
-        return `${key}: ${JSON.stringify(items)}`;
-      })
-      .join("\n");
+    if (varsList.length !== 0) {
+      w.write(`
+    <div id="sectGlobalVars">
+      <h2>Global Variables</h2>
+      <table>
+        <tbody id="listGlobalVars">
+        `);
+
+      for (let i = 0; i < varsList.length; i += 1) {
+        const decl = varsList[i];
+
+        w.write(`
+<tr>
+  <td><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+          this.declIndexName(decl)
+        )}</a></td>
+  <td>${this.declTypeHtml(decl)}</td>
+  <td>${this.declDocsHtmlShort(decl)}</td>
+</tr>
+          `);
+      }
+
+      w.write(`
+        </tbody>
+      </table>
+    </div>
+        `);
+    }
+
+    if (valsList.length > 0) {
+      w.write(`<div id="sectValues">
+      <h2>Values</h2>
+      <table>
+        <tbody id="listValues">`);
+
+      for (let i = 0; i < valsList.length; i += 1) {
+        const original_decl = valsList[i].original;
+        const decl = valsList[i].member;
+        //   tdNameA.setAttribute('href', navLinkDeclIndex(decl));
+        w.write(`
+<tr>
+<td><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+          this.declIndexName(original_decl)
+        )}</a></td>
+<td>${this.declTypeHtml(decl)}</td>
+<td>${this.declDocsHtmlShort(decl)}</td></tr>
+            `);
+      }
+
+      w.write(`</tbody>
+      </table>
+    </div>`);
+    }
+
+    if (fnsList.length > 0) {
+      w.write(`
+    <div id="sectFns">
+      <h2>Functions</h2>
+      <dl id="listFns">
+        `);
+
+      for (let i = 0; i < fnsList.length; i += 1) {
+        const decl = fnsList[i];
+
+        w.write(`
+<div>
+  <dt><code>${this.fnProtoHtml(decl, true)}</code></dt>
+  <dd>${this.declDocsHtmlShort(decl)}</dd>
+</div>
+          `);
+      }
+
+      w.write(`
+      </dl>
+    </div>
+          `);
+    }
+
+    if (errSetsList.length !== 0) {
+      w.write(`
+    <div id="sectErrSets">
+      <h2>Error Sets</h2>
+      <ul id="listErrSets" class="columns">
+        `);
+
+      for (let i = 0; i < errSetsList.length; i += 1) {
+        const original_decl = errSetsList[i].original;
+        const decl = errSetsList[i].member;
+
+        w.write(`
+      <li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+          this.declIndexName(original_decl)
+        )}</a></li>
+          `);
+      }
+
+      w.write(`
+      </ul>
+    </div>
+          `);
+    }
+
+    return _buf.join("");
   }
 
   log(level, ptr, len) {
@@ -338,4 +591,23 @@ export class Zdoc {
     await zdoc.load();
     return zdoc;
   }
+}
+
+function operatorCompare(a, b) {
+  if (a === b) {
+    return 0;
+  } else if (a < b) {
+    return -1;
+  } else {
+    return 1;
+  }
+}
+
+export function esc(s) {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
