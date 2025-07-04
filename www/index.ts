@@ -32,6 +32,7 @@ const server = bun.serve({
       const decl = req.params.decl;
 
       const idx0 = std.findDecl(decl);
+      console.log("idx0", typeof idx0);
       if (idx0 == null) {
         console.log(`decl "${decl}" -> ${idx0} (404)`);
 
