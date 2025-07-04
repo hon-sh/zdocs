@@ -54,3 +54,8 @@ zig build install -Doptimize=ReleaseSafe -p <your-install-prefix>
 ```bash
 zig build run -- -Mstd
 ```
+
+Note:
+- `zig build run -- -Mstd` use hash(#) route
+- www use url path route
+- also check www dist mode

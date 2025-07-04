@@ -25,6 +25,12 @@ const js = struct {
     extern "js" fn log(level: LogLevel, ptr: [*]const u8, len: usize) void;
 };
 
+pub const doc_options: struct {
+    docLinkBase: []const u8,
+} = .{
+    .docLinkBase = @import("build_options").docLinkBase,
+};
+
 pub const std_options: std.Options = .{
     .logFn = logFn,
     //.log_level = .debug,
@@ -244,7 +250,7 @@ const ErrorIdentifier = packed struct(u64) {
         try out.appendSlice(gpa, "<dt>");
         try out.appendSlice(gpa, name);
         if (has_link) {
-            try out.appendSlice(gpa, " <a href=\"#");
+            try out.appendSlice(gpa, " <a href=\"" ++ doc_options.docLinkBase);
             _ = missing_feature_url_escape;
             try decl_index.get().fqn(out);
             try out.appendSlice(gpa, "\">");
@@ -728,7 +734,7 @@ fn render_docs(
                             g.link_buffer.clearRetainingCapacity();
                             try resolveDeclLink(resolved_decl_index, &g.link_buffer);
 
-                            try writer.writeAll("<a href=\"#");
+                            try writer.writeAll("<a href=\"" ++ doc_options.docLinkBase);
                             _ = missing_feature_url_escape;
                             try writer.writeAll(g.link_buffer.items);
                             try writer.print("\">{}</a>", .{markdown.fmtHtml(content)});

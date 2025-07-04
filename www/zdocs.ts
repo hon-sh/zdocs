@@ -7,6 +7,8 @@ import type {
   MemString,
 } from "../src/docs/wasm";
 
+import mainPath from './main.wasm' with {loader: 'file'};
+
 const CAT_namespace = 0;
 const CAT_container = 1;
 const CAT_global_variable = 2;
@@ -24,7 +26,7 @@ const LOG_warn = 1;
 const LOG_info = 2;
 const LOG_debug = 3;
 
-const main = Bun.file("../src/docs/main.wasm");
+const main = Bun.file(mainPath);
 
 type Member = {
   original: number;
@@ -233,6 +235,42 @@ export class Zdoc {
     return idx;
   }
 
+  renderTypeFunction(decl_index: Index): string {
+    const w = Sink.init();
+
+    this.renderTopLevelDocs(w, decl_index, false);
+    this.renderParams(w, decl_index);
+    this.renderDocTests(w, decl_index);
+
+    const members = this.unwrapSlice32(
+      this.#api.type_fn_members(decl_index, false)
+    ).slice();
+    const fields = this.unwrapSlice32(
+      this.#api.type_fn_fields(decl_index)
+    ).slice();
+
+    if (members.length !== 0 || fields.length !== 0) {
+      w.write(this.renderNamespace(decl_index, members, fields));
+    } else {
+      this.renderSourceCode(w, decl_index);
+    }
+
+    return w.end();
+  }
+
+  renderErrorSetPage(decl_index: Index): string {
+    const w = Sink.init();
+
+    const errorSetList = this.declErrorSet(decl_index).slice();
+    this.renderErrorSet(w, decl_index, errorSetList);
+
+    return w.end();
+  }
+
+  declErrorSet(decl_index: Index) {
+    return this.unwrapSlice64(this.#api.decl_error_set(decl_index));
+  }
+
   renderDeclHeading(decl_index: Index) {
     const src =
       "#src/" + this.unwrapString(this.#api.decl_file_path(decl_index));
@@ -311,19 +349,31 @@ export class Zdoc {
     </div>
     `);
 
-    this.renderTopLevelDocs(w, decl_index);
+    this.renderTopLevelDocs(w, decl_index, false);
     this.renderDocTests(w, decl_index);
     this.renderParams(w, decl_index);
     this.renderFnErrorSet(w, decl_index);
+    this.renderSourceCode(w, decl_index);
 
+    return w.end();
+  }
+
+  renderGlobal(decl_index: Index) {
+    const w = Sink.init();
+
+    this.renderTopLevelDocs(w, decl_index, true);
+    this.renderSourceCode(w, decl_index);
+
+    return w.end();
+  }
+
+  renderSourceCode(w: Sink, decl_index: Index) {
     w.write(`
     <div id="sectSource">
       <h2>Source Code</h2>
       <pre><code id="sourceText">${this.declSourceHtml(decl_index)}</code></pre>
     </div>
       `);
-
-    return w.end();
   }
 
   renderDocTests(w: Sink, decl_index: Index) {
@@ -374,7 +424,7 @@ export class Zdoc {
     const errorSetNode = this.fnErrorSet(decl_index);
     if (errorSetNode != null) {
       const base_decl = this.#api.fn_error_set_decl(decl_index, errorSetNode);
-      this.renderFnErrorSet2(
+      this.renderErrorSet(
         w,
         base_decl,
         this.errorSetNodeList(decl_index, errorSetNode)
@@ -382,10 +432,10 @@ export class Zdoc {
     }
   }
 
-  renderFnErrorSet2(w: Sink, base_decl: Index, errorSetList: BigUint64Array) {
+  renderErrorSet(w: Sink, base_decl: Index, errorSetList: BigUint64Array) {
     w.write('<div id="sectFnErrors"><h2>Errors</h2>');
 
-    if (errorSetList == null) {
+    if (errorSetList == null || errorSetList.length === 0) {
       w.write(`
       <div id="fnErrorsAnyError">
         <p><span class="tok-type">anyerror</span> means the error set is known only at runtime.</p>
@@ -420,9 +470,9 @@ export class Zdoc {
     return this.unwrapString(this.#api.decl_source_html(decl_index));
   }
 
-  renderTopLevelDocs(w: Sink, decl_index: Index) {
+  renderTopLevelDocs(w: Sink, decl_index: Index, short: boolean) {
     const tld_docs_html = this.unwrapString(
-      this.#api.decl_docs_html(decl_index, false)
+      this.#api.decl_docs_html(decl_index, short)
     );
     if (tld_docs_html) {
       w.write(`<div id="tldDocs">${tld_docs_html}</div>`);
@@ -433,7 +483,7 @@ export class Zdoc {
     base_decl: Index,
     members: ArrayLike<Index>,
     fields: ArrayLike<Index>
-  ) {
+  ): string {
     const typesList: Member[] = [];
     const namespacesList: Member[] = [];
     const errSetsList: Member[] = [];
@@ -520,6 +570,8 @@ export class Zdoc {
       <pre id="errorsText"></pre>
     </div>
     */
+
+    this.renderTopLevelDocs(w, base_decl, false);
 
     if (fields.length !== 0) {
       w.write(`
@@ -673,6 +725,7 @@ export class Zdoc {
       <ul id="listErrSets" class="columns">
         `);
 
+      // XXX: this is not same as Error Set page
       for (let i = 0; i < errSetsList.length; i += 1) {
         const original_decl = errSetsList[i]!.original;
         const decl = errSetsList[i]!.member;

@@ -11,9 +11,9 @@ const Oom = error{OutOfMemory};
 /// Delete this to find out where URL escaping needs to be added.
 pub const missing_feature_url_escape = true;
 
-// TODO: customizable
-// zig std doc use #, zdocs use ''
-const docLinkPrefix = "";
+const root = @import("root");
+
+const docLinkPrefix = if (@hasDecl(root, "doc_options")) root.doc_options.docLinkBase else "#";
 
 pub const RenderSourceOptions = struct {
     skip_doc_comments: bool = false,

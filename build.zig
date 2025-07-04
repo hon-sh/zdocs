@@ -36,6 +36,26 @@ fn add_zdocs_exe(b: *std.Build, optimize: std.builtin.OptimizeMode, target: std.
 }
 
 fn add_update_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode) !void {
+    const update_wasm_step = b.step("update-wasm", "update src/docs/main.wasm and www/main.wasm");
+
+    // src/docs/main.wasm
+    {
+        const wasm = try mk_wasm(b, optimize, "#");
+        const copy_wasm = b.addUpdateSourceFiles();
+        copy_wasm.addCopyFileToSource(wasm.getEmittedBin(), "src/docs/main.wasm");
+        update_wasm_step.dependOn(&copy_wasm.step);
+    }
+
+    // www/main.wasm
+    {
+        const wasm = try mk_wasm(b, optimize, "");
+        const copy_wasm = b.addUpdateSourceFiles();
+        copy_wasm.addCopyFileToSource(wasm.getEmittedBin(), "www/main.wasm");
+        update_wasm_step.dependOn(&copy_wasm.step);
+    }
+}
+
+fn mk_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode, docLinkBase: []const u8) !*std.Build.Step.Compile {
     const wasm = b.addExecutable(.{
         .name = "main",
         .root_source_file = b.path("src/wasm/main.zig"),
@@ -47,10 +67,9 @@ fn add_update_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode) !void {
     });
     wasm.entry = .disabled;
     wasm.rdynamic = true;
+    const opt = b.addOptions();
+    opt.addOption([]const u8, "docLinkBase", docLinkBase);
+    wasm.root_module.addOptions("build_options", opt);
 
-    const copy_wasm = b.addUpdateSourceFiles();
-    copy_wasm.addCopyFileToSource(wasm.getEmittedBin(), "src/docs/main.wasm");
-
-    const update_wasm_step = b.step("update-wasm", "update src/docs/main.wasm");
-    update_wasm_step.dependOn(&copy_wasm.step);
+    return wasm;
 }
