@@ -5,7 +5,7 @@ import type {
   Ptr,
   MemSlice,
   MemString,
-} from "../src/docs/wasm";
+} from "./wasm";
 
 import mainPath from './main.wasm' with {loader: 'file'};
 
@@ -278,7 +278,7 @@ export class Zdoc {
     const name = this.unwrapString(this.#api.decl_category_name(decl_index));
     return `<h1 id="hdrName"><span>${esc(
       name
-    )}</span><a style="cursor: not-allowed" href="${esc(src)}">[src]</a></h1>`;
+    )}</span><a style="display: none" href="${esc(src)}">[src]</a></h1>`;
   }
 
   renderNavFancy(cur_nav_decl: Index, list: { name: string; href: string }[]) {
