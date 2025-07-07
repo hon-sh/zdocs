@@ -7,6 +7,16 @@ import type {
   MemString,
 } from "./wasm";
 
+export type {
+  CategoryTag,
+  Index,
+  Ptr,
+  MemSlice,
+  MemString,
+};
+
+import {htmlEscape, Sink} from './utils';
+
 import mainPath from './main.wasm' with {loader: 'file'};
 
 const CAT_namespace = 0;
@@ -276,9 +286,9 @@ export class Zdoc {
       "#src/" + this.unwrapString(this.#api.decl_file_path(decl_index));
 
     const name = this.unwrapString(this.#api.decl_category_name(decl_index));
-    return `<h1 id="hdrName"><span>${esc(
+    return `<h1 id="hdrName"><span>${htmlEscape(
       name
-    )}</span><a style="display: none" href="${esc(src)}">[src]</a></h1>`;
+    )}</span><a style="display: none" href="${htmlEscape(src)}">[src]</a></h1>`;
   }
 
   renderNavFancy(cur_nav_decl: Index, list: { name: string; href: string }[]) {
@@ -320,9 +330,9 @@ export class Zdoc {
 
     for (let i = 0; i < list.length; i += 1) {
       buf.push(`
-<li><a ${i + 1 == list.length ? ' class="active"' : ""} href="${esc(
+<li><a ${i + 1 == list.length ? ' class="active"' : ""} href="${htmlEscape(
         list[i]!.href
-      )}">${esc(list[i]!.name)}</a></li>
+      )}">${htmlEscape(list[i]!.name)}</a></li>
         `);
     }
 
@@ -603,7 +613,7 @@ export class Zdoc {
         const original_decl = typesList[i]!.original;
         const decl = typesList[i]!.member;
         w.write(
-          `<li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+          `<li><a href="${htmlEscape(this.navLinkDeclIndex(decl))}">${htmlEscape(
             this.declIndexName(original_decl)
           )}</a></li>
 `
@@ -627,7 +637,7 @@ export class Zdoc {
         const decl = namespacesList[i]!.member;
 
         w.write(
-          `<li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+          `<li><a href="${htmlEscape(this.navLinkDeclIndex(decl))}">${htmlEscape(
             this.declIndexName(original_decl)
           )}</a></li>
 `
@@ -653,7 +663,7 @@ export class Zdoc {
 
         w.write(`
 <tr>
-  <td><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+  <td><a href="${htmlEscape(this.navLinkDeclIndex(decl))}">${htmlEscape(
           this.declIndexName(decl)
         )}</a></td>
   <td>${this.declTypeHtml(decl)}</td>
@@ -681,7 +691,7 @@ export class Zdoc {
         //   tdNameA.setAttribute('href', navLinkDeclIndex(decl));
         w.write(`
 <tr>
-<td><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+<td><a href="${htmlEscape(this.navLinkDeclIndex(decl))}">${htmlEscape(
           this.declIndexName(original_decl)
         )}</a></td>
 <td>${this.declTypeHtml(decl)}</td>
@@ -731,7 +741,7 @@ export class Zdoc {
         const decl = errSetsList[i]!.member;
 
         w.write(`
-      <li><a href="${esc(this.navLinkDeclIndex(decl))}">${esc(
+      <li><a href="${htmlEscape(this.navLinkDeclIndex(decl))}">${htmlEscape(
           this.declIndexName(original_decl)
         )}</a></li>
           `);
@@ -778,37 +788,5 @@ function operatorCompare<T>(a: T, b: T) {
     return -1;
   } else {
     return 1;
-  }
-}
-
-export function esc(s: string) {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-class Sink {
-  #buf: string[];
-
-  constructor() {
-    this.#buf = [];
-
-    this.write = this.write.bind(this);
-    this.end = this.end.bind(this);
-  }
-
-  write(b: string) {
-    this.#buf.push(b);
-  }
-
-  end() {
-    return this.#buf.join("");
-  }
-
-  static init() {
-    return new Sink();
   }
 }
