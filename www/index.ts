@@ -24,8 +24,10 @@ const server = bun.serve({
   </head>
   <body>
     <ul>
-      <li><a href="/mod/doc/std">std</a></li>
-      <li><a href="/mod/doc/zig">zig</a></li>
+      <li><a href="/std/any/std">std</a></li>
+      <li><a href="/zig/any/zig">zig</a> (zig compiler)</li>
+      <li>aio: <a href="/aio/any/aio">aio</a>, <a href="/aio/any/coro">coro</a></li>
+      <li>raylib: <a href="/raylib/any/raylib">raylib</a>, <a href="/raylib/any/raygui">raygui</a></li>
     </ul>
   </body>
 </html>
@@ -37,6 +39,13 @@ const server = bun.serve({
     },
 
     "/mod/doc/:decl": async (req): Promise<Response> => {
+      if (/^std(?:$|\.)/.test(req.params.decl)) {
+        return Response.redirect(`/std/any/${req.params.decl}`, 301);
+      }
+      return new Response("Not found", { status: 404 });
+    },
+
+    "/:pkg/:ver/:decl": async (req): Promise<Response> => {
       console.time("cssLink");
       const cssLink = is_dev
         ? await getCssLink()
@@ -48,9 +57,10 @@ const server = bun.serve({
 
       const decl = req.params.decl;
 
-      const pkg = await pkgs.get(decl.split(".")[0]!);
+      // TODO: ver
+      const pkg = await pkgs.get(req.params.pkg);
       if (pkg == null) {
-        console.log(`pkg "${decl}" 404`);
+        console.log(`pkg "${req.params.pkg}" 404`);
         return new Response("Not found", { status: 404 });
       }
 

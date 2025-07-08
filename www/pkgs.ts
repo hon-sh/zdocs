@@ -22,7 +22,7 @@ export class Pkgs {
 
   // set/init this.#pkgs, delete this.#loading
   async load(pkg: string): Promise<boolean> {
-    const zdoc = await Zdoc.load(`${pkg}.tar`);
+    const zdoc = await Zdoc.load(`pkgs/${pkg}.tar`);
     const pkg_ = new Pkg(zdoc);
     this.#pkgs.set(pkg, pkg_);
     this.#loading.delete(pkg);
@@ -92,7 +92,7 @@ zig.hon.sh/aio/edge/coro
 
 export function nav() {
   return `<nav>
-      <a class="logo" href="#">
+      <a class="logo" href="/">
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 140">
         <g fill="#F7A41D">
           <g>
