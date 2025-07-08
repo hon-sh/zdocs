@@ -13,6 +13,7 @@ const is_dev = false;
 
 const server = bun.serve({
   routes: {
+    // XXX: from v0.0.2-pre
     "/": async (req): Promise<Response> => {
       return new Response(
         `<!doctype html>
@@ -38,6 +39,7 @@ const server = bun.serve({
       );
     },
 
+    // XXX: only used in v0.0.1
     "/mod/doc/:decl": async (req): Promise<Response> => {
       if (/^std(?:$|\.)/.test(req.params.decl)) {
         return Response.redirect(`/std/any/${req.params.decl}`, 301);
@@ -45,6 +47,7 @@ const server = bun.serve({
       return new Response("Not found", { status: 404 });
     },
 
+    // XXX: from v0.0.2-pre
     "/:pkg/:ver/:decl": async (req): Promise<Response> => {
       console.time("cssLink");
       const cssLink = is_dev
@@ -100,20 +103,7 @@ const server = bun.serve({
       });
     },
 
-    "/asy": async (req) => {
-      return new Response(
-        // An async generator function
-        async function* () {
-          yield "Hello, ";
-          await Bun.sleep(3000);
-          yield "world!";
-          // you can also yield a TypedArray or Buffer
-          yield new Uint8Array(["\n".charCodeAt(0)]);
-        },
-        { headers: { "Content-Type": "text/plain" } }
-      );
-    },
-
+    // XXX: 页面css在bun中的hack，先临时用着
     "/a": a,
   },
 
