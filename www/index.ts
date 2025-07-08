@@ -20,7 +20,7 @@ const server = bun.serve({
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${htmlEscape('Zig Documentation')}</title>
+    <title>${htmlEscape("Zig Documentation")}</title>
   </head>
   <body>
     <ul>
@@ -48,19 +48,25 @@ const server = bun.serve({
 
       const decl = req.params.decl;
 
-      if (pkgs.find(decl) == null) {
+      const pkg = await pkgs.get(decl.split(".")[0]!);
+      if (pkg == null) {
+        console.log(`pkg "${decl}" 404`);
+        return new Response("Not found", { status: 404 });
+      }
+
+      if (pkg.find(decl) == null) {
         console.log(`decl "${decl}" 404`);
 
         return new Response("Not found", { status: 404 });
       }
 
       console.time("render doc");
-      const doc = pkgs.render(decl);
+      const doc = pkg.render(decl);
       //   console.log("index items\n", renderResult);
       console.timeEnd("render doc");
 
       const titleSuffix = " - Zig Documentation";
-      const title = pkgs.title(decl) + titleSuffix;
+      const title = pkg.title(decl) + titleSuffix;
 
       // Stream write to response
       const responseText = `<!doctype html>

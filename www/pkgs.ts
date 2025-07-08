@@ -1,21 +1,54 @@
 import { htmlEscape, Sink } from "./utils";
 import { type Index, Zdoc } from "./zdocs";
 
-const std = await Zdoc.load("sources.tar");
-
 export class Pkgs {
+  #pkgs = new Map<string, Pkg>();
+  #loading = new Map<string, Promise<boolean>>();
+
+  async get(pkg: string): Promise<Pkg | null> {
+    if (this.#pkgs.has(pkg)) {
+      return this.#pkgs.get(pkg)!;
+    }
+
+    if (!this.#loading.has(pkg)) {
+      this.#loading.set(pkg, this.load(pkg));
+    }
+
+    await this.#loading.get(pkg);
+    return this.#pkgs.get(pkg)!;
+  }
+
+  // FIXME: load error
+
+  // set/init this.#pkgs, delete this.#loading
+  async load(pkg: string): Promise<boolean> {
+    const zdoc = await Zdoc.load(`${pkg}.tar`);
+    const pkg_ = new Pkg(zdoc);
+    this.#pkgs.set(pkg, pkg_);
+    this.#loading.delete(pkg);
+    return true;
+  }
+}
+
+export class Pkg {
+  #zdoc: Zdoc;
+
+  constructor(zdoc: Zdoc) {
+    this.#zdoc = zdoc;
+  }
+
   find(decl: string, resolveAlias: boolean = false): Index | null {
-    const idx = std.findDecl(decl);
+    const idx = this.#zdoc.findDecl(decl);
     if (idx == null || !resolveAlias) {
       return idx;
     }
 
-    return std.resolveAliasee(idx);
+    return this.#zdoc.resolveAliasee(idx);
 
     //   console.log(
     //     `decl "${decl}" -> ${
     //       idx == idx0 ? "" : `(*${idx0})`
-    //     }${idx} -> "${std.fullyQualifiedName(idx)}"`
+    //     }${idx} -> "${this.#zdoc.fullyQualifiedName(idx)}"`
     //   );
   }
 
@@ -25,7 +58,7 @@ export class Pkgs {
       return "";
     }
 
-    return std.fullyQualifiedName(idx);
+    return this.#zdoc.fullyQualifiedName(idx);
   }
 
   render(decl: string) {
@@ -36,12 +69,12 @@ export class Pkgs {
 
     return `<div id="navWrap">
       <input type="search" id="search" autocomplete="off" spellcheck="false" placeholder="\`s\` to search, \`?\` to see more options">
-      ${std.renderNavFancy(idx, [])}
+      ${this.#zdoc.renderNavFancy(idx, [])}
     </div>
     <section>
-      ${std.renderDeclHeading(idx)}
+      ${this.#zdoc.renderDeclHeading(idx)}
 
-      ${std.renderDecl(idx)}
+      ${this.#zdoc.renderDecl(idx)}
     </section>
 `;
   }
