@@ -6,6 +6,10 @@ zdocs is like [zig std](https://ziglang.org/documentation/0.14.1/std/), but for 
 
 https://github.com/user-attachments/assets/37369d10-da89-4c59-9bf3-639784d880fa
 
+## documentation
+
+For a detailed overview of the project architecture, see [ARCHITECTURE.md](./ARCHITECTURE.md).
+
 ## usage
 
 show docs of std
